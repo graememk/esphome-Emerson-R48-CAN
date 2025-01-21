@@ -1,0 +1,533 @@
+esphome:
+  name: lilygo-emersion-can
+  friendly_name: lilygo Emersion CAN
+
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid1
+  password: !secret wifi_password1
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "lilygo-Emersion-Can"
+
+
+captive_portal:
+
+output:
+  # SN65HVD231DR RS PIN (CAN high speed mode)
+  - platform: gpio
+    id: CAN_SE
+    pin:
+      number: 23
+      inverted: false # set LOW level
+
+
+
+esp32:
+  board: esp32doit-devkit-v1
+  framework:
+    type: arduino
+
+
+
+canbus:
+  - platform: esp32_can
+    tx_pin: GPIO27
+    rx_pin: GPIO26
+    can_id: 6
+    bit_rate: 125kbps
+    
+    on_frame:
+    
+    - can_id: 0x60F8003 
+      use_extended_id: true
+      then:
+        - lambda: |-
+            union {
+              float f;
+              uint32_t raw;
+              char charA[4];
+            }hexfloat;
+            ESP_LOGI("INFO", "Message Received hex: %x %x %x %x %x %x %x %x", x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);
+
+            byte val[4];
+
+            byte val0 = x[0];
+            byte val1 = x[1];
+            byte val2 = x[2];
+            int val3 =  x[3];
+            val[0] = x[4];
+            val[1] = x[5];
+            val[2] = x[6];
+            val[3] = x[7];
+
+            hexfloat.raw =   (uint32_t)val[0] << 24 | (uint32_t)val[1] << 16 | (uint32_t)val[3] << 8 | (uint32_t)val[3];
+            float value = hexfloat.f;
+            if(val3 == 0x01)
+            {
+              //voltage
+              ESP_LOGI("INFO", "Voltage : %f ", value);
+              id(output_voltage).publish_state(value);
+            }
+            else if(val3 == 0x02)
+            {
+              //output current
+              id(output_current).publish_state(value);
+            }
+            else if(val3 == 0x03)
+            {
+              //outputcurrent limit
+              id(output_current_limit).publish_state(value);
+            }
+            else if(val3 == 0x04)
+            {
+              //temperature in C
+              id(temperature).publish_state(value);
+            }
+            else if(val3 == 0x05)
+            {
+              //Supply Voltage
+              id(input_voltage).publish_state(value);
+            }
+            else if(val3 == 0x06)
+            {
+              //supply voltage
+              ESP_LOGI("INFO", "Number 6 : %f ", value);
+            }
+            
+            else if(val3 == 0x07)
+            {
+              //supply voltage
+              ESP_LOGI("INFO", "Number 7 : %f ", value);
+            }
+            else if(val3 == 0x08)
+            {
+              //supply voltage
+              ESP_LOGI("INFO", "Number 8 : %f ", value);
+            }
+            else if(val3 == 0x09)
+            {
+              //supply voltage
+              ESP_LOGI("INFO", "Number 9 : %f ", value);
+            }
+            else if(val3 == 0x0A)
+            {
+              //supply voltage
+              ESP_LOGI("INFO", "Number 10 : %f ", value);
+            }
+   
+interval:
+  - interval: 5000ms
+    then:
+      - canbus.send: # 
+          use_extended_id: true
+          can_id: 0x06000783
+          data: !lambda |-
+            uint8_t can_mesg[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            can_mesg[0] = 0x01;
+            can_mesg[1] = 0xF0;
+            can_mesg[2] = 0x00;
+            can_mesg[3] = 0x01;// coutput Voltage
+            can_mesg[4] = 0x00;
+            can_mesg[5] = 0x00;
+            can_mesg[6] = 0x00;
+            can_mesg[7] = 0x00;             
+            ESP_LOGI("INFO", "Request Volt");
+            return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+      - delay: 10ms
+      - canbus.send: # 
+          use_extended_id: true
+          can_id: 0x06000783
+          data: !lambda |-
+            uint8_t can_mesg[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            can_mesg[0] = 0x01;
+            can_mesg[1] = 0xF0;
+            can_mesg[2] = 0x00;
+            can_mesg[3] = 0x02;// coutput Current
+            can_mesg[4] = 0x00;
+            can_mesg[5] = 0x00;
+            can_mesg[6] = 0x00;
+            can_mesg[7] = 0x00; 
+            ESP_LOGI("INFO", "Request current");
+            return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+      - delay: 10ms
+      - canbus.send: # 
+          use_extended_id: true
+          can_id: 0x06000783
+          data: !lambda |-
+            uint8_t can_mesg[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            can_mesg[0] = 0x01;
+            can_mesg[1] = 0xF0;
+            can_mesg[2] = 0x00;
+            can_mesg[3] = 0x03;// coutput Current limit
+            can_mesg[4] = 0x00;
+            can_mesg[5] = 0x00;
+            can_mesg[6] = 0x00;
+            can_mesg[7] = 0x00; 
+            ESP_LOGI("INFO", "Request current limit");
+            return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+      - delay: 10ms
+      - canbus.send: # 
+          use_extended_id: true
+          can_id: 0x06000783
+          data: !lambda |-
+            uint8_t can_mesg[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            can_mesg[0] = 0x01;
+            can_mesg[1] = 0xF0;
+            can_mesg[2] = 0x00;
+            can_mesg[3] = 0x04;// coutput Current limit
+            can_mesg[4] = 0x00;
+            can_mesg[5] = 0x00;
+            can_mesg[6] = 0x00;
+            can_mesg[7] = 0x00; 
+            ESP_LOGI("INFO", "Request temperature");
+            return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+      - delay: 10ms
+      - canbus.send: # 
+          use_extended_id: true
+          can_id: 0x06000783
+          data: !lambda |-
+            uint8_t can_mesg[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            can_mesg[0] = 0x01;
+            can_mesg[1] = 0xF0;
+            can_mesg[2] = 0x00;
+            can_mesg[3] = 0x05;// Temperature
+            can_mesg[4] = 0x00;
+            can_mesg[5] = 0x00;
+            can_mesg[6] = 0x00;
+            can_mesg[7] = 0x00; 
+            ESP_LOGI("INFO", "Request input volt");
+            return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+      - delay: 10ms
+      - canbus.send: # 
+          use_extended_id: true
+          can_id: 0x06000783
+          data: !lambda |-
+            uint8_t can_mesg[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            can_mesg[0] = 0x01;
+            can_mesg[1] = 0xF0;
+            can_mesg[2] = 0x00;
+            can_mesg[3] = 0x06;// Supply Voltage
+            can_mesg[4] = 0x00;
+            can_mesg[5] = 0x00;
+            can_mesg[6] = 0x00;
+            can_mesg[7] = 0x00; 
+            ESP_LOGI("INFO", "Request number 6");
+            return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+      - delay: 10ms
+
+      - canbus.send: # 
+          use_extended_id: true
+          can_id: 0x06000783
+          data: !lambda |-
+            uint8_t can_mesg[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            can_mesg[0] = 0x01;
+            can_mesg[1] = 0xF0;
+            can_mesg[2] = 0x00;
+            can_mesg[3] = 0x07;// Supply Voltage
+            can_mesg[4] = 0x00;
+            can_mesg[5] = 0x00;
+            can_mesg[6] = 0x00;
+            can_mesg[7] = 0x00; 
+            ESP_LOGI("INFO", "Request number 7");
+            return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+      - delay: 10ms
+      - canbus.send: # 
+          use_extended_id: true
+          can_id: 0x06000783
+          data: !lambda |-
+            uint8_t can_mesg[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            can_mesg[0] = 0x01;
+            can_mesg[1] = 0xF0;
+            can_mesg[2] = 0x00;
+            can_mesg[3] = 0x08;// Supply Voltage
+            can_mesg[4] = 0x00;
+            can_mesg[5] = 0x00;
+            can_mesg[6] = 0x00;
+            can_mesg[7] = 0x00; 
+            ESP_LOGI("INFO", "Request number 8");
+            return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+      - delay: 10ms
+      - canbus.send: #
+          use_extended_id: true
+          can_id: 0x06000783
+          data: !lambda |-
+            uint8_t can_mesg[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            can_mesg[0] = 0x01;
+            can_mesg[1] = 0xF0;
+            can_mesg[2] = 0x00;
+            can_mesg[3] = 0x09;// Supply Voltage
+            can_mesg[4] = 0x00;
+            can_mesg[5] = 0x00;
+            can_mesg[6] = 0x00;
+            can_mesg[7] = 0x00; 
+            ESP_LOGI("INFO", "Request number 9");
+            return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+      - delay: 10ms
+      - canbus.send: # 
+          use_extended_id: true
+          can_id: 0x06000783
+          data: !lambda |-
+            uint8_t can_mesg[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            can_mesg[0] = 0x01;
+            can_mesg[1] = 0xF0;
+            can_mesg[2] = 0x00;
+            can_mesg[3] = 0x0A;// Supply Voltage
+            can_mesg[4] = 0x00;
+            can_mesg[5] = 0x00;
+            can_mesg[6] = 0x00;
+            can_mesg[7] = 0x00; 
+            ESP_LOGI("INFO", "Request number 11");
+            return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+      - delay: 10ms
+
+  - interval: 10000ms
+    then: 
+      - if:
+          condition:
+            - switch.is_on: ha_control
+          then:
+            - canbus.send: # online voltage
+                use_extended_id: true
+                can_id: 0x06000783
+                data: !lambda |-
+                  union {
+                    float f;
+                    uint32_t raw;
+                    char charA[4];
+                  }hexfloat;
+                  hexfloat.f = id(voltage_set).state;
+
+                  uint8_t can_mesg[] = {0x03, 0xF0, 0x00, 0x21, 0, 0, 0, 0};
+                  can_mesg[4] = hexfloat.charA[3];
+                  can_mesg[5] = hexfloat.charA[2];
+                  can_mesg[6] = hexfloat.charA[1];
+                  can_mesg[7] = hexfloat.charA[0];             
+                  return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+            - delay: 10ms
+            - canbus.send: # online current
+                use_extended_id: true
+                can_id: 0x06000783
+                data: !lambda |-
+                  union {
+                    float f;
+                    uint32_t raw;
+                    char charA[4];
+                  }hexfloat;
+                  hexfloat.f = id(output_current_set).state/100;
+
+                  uint8_t can_mesg[] = {0x03, 0xF0, 0x00, 0x22, 0, 0, 0, 0};
+                  can_mesg[4] = hexfloat.charA[3];
+                  can_mesg[5] = hexfloat.charA[2];
+                  can_mesg[6] = hexfloat.charA[1];
+                  can_mesg[7] = hexfloat.charA[0];             
+                  return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+
+
+
+
+sensor:
+# Uptime sensor
+  - platform: uptime
+    name: ${name} Uptime Sensor
+    id: uptime_sensor
+    update_interval: 60s
+    on_raw_value:
+      then:
+        - text_sensor.template.publish:
+            id: uptime_human
+            state: !lambda |-
+              int seconds = round(id(uptime_sensor).raw_state);
+              int days = seconds / (24 * 3600);
+              seconds = seconds % (24 * 3600);
+              int hours = seconds / 3600;
+              seconds = seconds % 3600;
+              int minutes = seconds /  60;
+              seconds = seconds % 60;
+              return (
+                (days ? to_string(days) + "d " : "") +
+                (hours ? to_string(hours) + "h " : "") +
+                (minutes ? to_string(minutes) + "m " : "") +
+                (to_string(seconds) + "s")
+              ).c_str();
+
+ 
+  
+  - platform: template
+    name: "Output Voltage"
+    id: "output_voltage"
+    unit_of_measurement: V
+    icon: mdi:current-dc
+    accuracy_decimals: 2
+
+  - platform: template
+    name: "Output Current"
+    id: "output_current"
+    unit_of_measurement: A
+    icon: mdi:current-dc
+    accuracy_decimals: 2
+
+  - platform: template
+    name: "Output Current Limit"
+    id: "output_current_limit"
+    unit_of_measurement: '%'
+    icon: mdi:current-dc
+    accuracy_decimals: 2
+
+  - platform: template
+    name: "Temperature"
+    id: "temperature"
+    unit_of_measurement: °C
+    icon: mdi:current-dc
+    accuracy_decimals: 2
+
+  - platform: template
+    name: "Input Voltage"
+    id: "input_voltage"
+    unit_of_measurement: V
+    icon: mdi:current-dc
+    accuracy_decimals: 2
+
+
+switch:
+  - platform: template
+    name: HA Control
+    id: ha_control
+    optimistic: true
+
+
+   
+
+
+
+# Slider
+number:
+  - platform: template
+    name: "Voltage Set"
+    id: "voltage_set"
+    step: 0.1
+    min_value: 55
+    max_value: 58
+    mode: slider
+    initial_value: 56
+    unit_of_measurement: V
+    icon: mdi:current-dc
+    optimistic: true
+
+  - platform: template
+    name: "Output Current Set"
+    id: "output_current_set"
+    step: 1
+    min_value: 0
+    max_value: 121
+    mode: slider
+    initial_value: 100
+    unit_of_measurement: '%'
+    icon: mdi:current-dc
+    optimistic: true
+
+  - platform: template
+    name: "Input Current Set"
+    id: "input_current_set"
+    step: 1
+    min_value: 0
+    max_value: 16
+    mode: slider
+    initial_value: 13
+    unit_of_measurement: A
+    icon: mdi:current-dc
+    optimistic: true
+
+button:
+  - platform: template
+    name: Set offline Voltage
+    id: set_offline_voltage
+    icon: "mdi:emoticon-outline"
+    on_press:
+      - logger.log: "Button pressed"
+      - canbus.send: # Warning, Alarms
+          use_extended_id: true
+          can_id: 0x0607FF83
+          data: !lambda |-
+              union {
+                float f;
+                uint32_t raw;
+                char charA[4];
+              }hexfloat;
+              hexfloat.f = id(voltage_set).state;
+
+              uint8_t can_mesg[] = {0x03, 0xF0, 0x00, 0x24, 0, 0, 0, 0};
+              can_mesg[4] = hexfloat.charA[3];
+              can_mesg[5] = hexfloat.charA[2];
+              can_mesg[6] = hexfloat.charA[1];
+              can_mesg[7] = hexfloat.charA[0];             
+              return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+
+  - platform: template
+    name: Set offline Current
+    id: set_offline_current
+    icon: "mdi:emoticon-outline"
+    on_press:
+      - logger.log: "Button pressed"
+      - canbus.send: # Warning, Alarms
+          use_extended_id: true
+          can_id: 0x0607FF83
+          data: !lambda |-
+              union {
+                float f;
+                uint32_t raw;
+                char charA[4];
+              }hexfloat;
+              hexfloat.f = id(output_current_set).state/100;
+
+              uint8_t can_mesg[] = {0x03, 0xF0, 0x00, 0x19, 0, 0, 0, 0};
+              can_mesg[4] = hexfloat.charA[3];
+              can_mesg[5] = hexfloat.charA[2];
+              can_mesg[6] = hexfloat.charA[1];
+              can_mesg[7] = hexfloat.charA[0];             
+              return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+
+  - platform: template
+    name: Set Input Current
+    id: set_input_current
+    icon: "mdi:emoticon-outline"
+    on_press:
+      - logger.log: "Button pressed"
+      - canbus.send: # Warning, Alarms
+          use_extended_id: true
+          can_id: 0x0607FF83
+          data: !lambda |-
+              union {
+                float f;
+                uint32_t raw;
+                char charA[4];
+              }hexfloat;
+              hexfloat.f = id(input_current_set).state;
+
+              uint8_t can_mesg[] = {0x03, 0xF0, 0x00, 0x1A, 0, 0, 0, 0};
+              can_mesg[4] = hexfloat.charA[3];
+              can_mesg[5] = hexfloat.charA[2];
+              can_mesg[6] = hexfloat.charA[1];
+              can_mesg[7] = hexfloat.charA[0];             
+              return {can_mesg[0], can_mesg[1], can_mesg[2], can_mesg[3], can_mesg[4], can_mesg[5], can_mesg[6], can_mesg[7]};
+  
+
+text_sensor:
+# Uptime Sensor
+  - platform: template
+    name: Uptime Human Readable
+    id: uptime_human
+    icon: mdi:clock-start
+    
+    
+    
