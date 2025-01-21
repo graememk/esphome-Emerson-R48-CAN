@@ -38,3 +38,5 @@ output:
       number: 23
       inverted: false # set LOW level
 ```
+Thanks go to this forum post, Without it, I wouldnt have been able to do it
+https://endless-sphere.com/sphere/threads/emerson-vertiv-r48-series-can-programming.114785/
