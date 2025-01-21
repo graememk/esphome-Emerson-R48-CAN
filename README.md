@@ -7,7 +7,7 @@ Something that tripped me up initially with the lilygo board is that the CAN or 
 
 Sleeper85 was very helpful with these intital configs for it
 https://github.com/Xinyuan-LilyGO/T-CAN485/issues/16#issuecomment-2595962388
-
+```
 # +--------------------------------------+
 # | LilyGo T-CAN485 related config       |
 # +--------------------------------------+
@@ -37,3 +37,4 @@ output:
     pin:
       number: 23
       inverted: false # set LOW level
+```
